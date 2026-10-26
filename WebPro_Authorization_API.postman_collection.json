@@ -1,0 +1,596 @@
+{
+  "info": {
+    "_postman_id": "a7b3c2d1-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+    "name": "WebPro - Authorization & RBAC API",
+    "description": "Comprehensive Postman Collection for WebPro App Authorization system (Laravel Sanctum & Spatie Laravel Permission).\n\nFeatures:\n- Authentication (Login, Register, Profile, Logout)\n- User Management CRUD (Search, Filter, Pagination)\n- Role Management CRUD & Permission Matrix Sync (Spatie)\n- Permission Catalog CRUD\n\nTips:\nRun 'Login (Admin)' first. The test script will automatically set the `{{token}}` variable for all subsequent requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01. Authentication",
+      "description": "User login, registration, profile retrieval, and token management via Laravel Sanctum.",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('token', json.data.token);",
+                  "        pm.environment.set('token', json.data.token);",
+                  "        console.log('Sanctum token saved successfully!');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@webpro.com\",\n  \"password\": \"password123\",\n  \"device_name\": \"Postman-Client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Authenticates user and generates a Sanctum Bearer token. Test script automatically saves the token to {{token}}."
+          }
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Team Member\",\n  \"email\": \"newuser@webpro.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"role\": \"Editor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": ["{{base_url}}"],
+              "path": ["register"]
+            },
+            "description": "Registers a new user and assigns a default Spatie role."
+          }
+        },
+        {
+          "name": "Get Authenticated User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": ["{{base_url}}"],
+              "path": ["me"]
+            },
+            "description": "Returns current logged-in user profile, Spatie roles, and granted permissions."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aigars Silkalns\",\n  \"email\": \"admin@webpro.com\",\n  \"phone\": \"+1 (555) 019-2834\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Updates current user profile details."
+          }
+        },
+        {
+          "name": "Logout (Current Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": ["{{base_url}}"],
+              "path": ["logout"]
+            },
+            "description": "Revokes current Sanctum bearer token."
+          }
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout-all",
+              "host": ["{{base_url}}"],
+              "path": ["logout-all"]
+            },
+            "description": "Revokes all Sanctum tokens across all devices for current user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Users Management (CRUD)",
+      "description": "Endpoints for managing system users, searching, filtering, and assigning Spatie roles.",
+      "item": [
+        {
+          "name": "List Users (Search & Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users?search=&role=&status=&department=&per_page=10&page=1",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Keyword to search across name and email"
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "Filter by Spatie role (e.g. Admin, Editor, Moderator, Viewer)"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by status (Active, Inactive, Suspended)"
+                },
+                {
+                  "key": "department",
+                  "value": "",
+                  "description": "Filter by department"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10",
+                  "description": "Number of users per page"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                }
+              ]
+            },
+            "description": "Retrieves paginated list of users with assigned Spatie roles and status."
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jonathan Doe\",\n  \"email\": \"jonathan.doe@webpro.com\",\n  \"password\": \"password123\",\n  \"role\": \"Editor\",\n  \"department\": \"Engineering\",\n  \"status\": \"Active\",\n  \"phone\": \"+1 (555) 839-2041\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Creates a new user and assigns them to the specified Spatie role."
+          }
+        },
+        {
+          "name": "Get User Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1"]
+            },
+            "description": "Retrieves detail of a single user by ID, including roles and permissions."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jonathan Doe Updated\",\n  \"email\": \"jonathan.doe@webpro.com\",\n  \"role\": \"Moderator\",\n  \"department\": \"Operations\",\n  \"status\": \"Active\",\n  \"phone\": \"+1 (555) 999-0000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1"]
+            },
+            "description": "Updates user profile, status, and synchronizes Spatie role assignment."
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/3",
+              "host": ["{{base_url}}"],
+              "path": ["users", "3"]
+            },
+            "description": "Deletes user account and revokes associated tokens."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Role Management (CRUD)",
+      "description": "Endpoints for defining system roles and granular Spatie permissions matrix.",
+      "item": [
+        {
+          "name": "List Roles (with Permissions & Users Count)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles",
+              "host": ["{{base_url}}"],
+              "path": ["roles"]
+            },
+            "description": "Returns all Spatie roles with eager-loaded permissions and active user count."
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"FinanceManager\",\n  \"permissions\": [\n    \"orders.view\",\n    \"orders.edit\",\n    \"analytics.view\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles",
+              "host": ["{{base_url}}"],
+              "path": ["roles"]
+            },
+            "description": "Creates a new Spatie role and attaches permission slugs."
+          }
+        },
+        {
+          "name": "Get Role Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/1",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "1"]
+            },
+            "description": "Retrieves role detail, assigned permissions, and member users."
+          }
+        },
+        {
+          "name": "Update Role & Permissions Matrix",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Editor\",\n  \"permissions\": [\n    \"users.view\",\n    \"dashboard.view\",\n    \"analytics.view\",\n    \"orders.view\",\n    \"orders.create\",\n    \"orders.edit\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/2",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "2"]
+            },
+            "description": "Updates role name and syncs complete permission matrix."
+          }
+        },
+        {
+          "name": "Sync Role Permissions Specifically",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"users.view\",\n    \"roles.view\",\n    \"dashboard.view\",\n    \"analytics.view\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/2/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "2", "permissions"]
+            },
+            "description": "Dedicated endpoint to synchronize permissions array to a specific role."
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/4",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "4"]
+            },
+            "description": "Deletes a role (Admin role is protected and cannot be deleted)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Permission Catalog (CRUD)",
+      "description": "Endpoints for managing granular Spatie permission abilities.",
+      "item": [
+        {
+          "name": "List All Permissions (Grouped by Module)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["permissions"]
+            },
+            "description": "Retrieves full catalog of permissions both as a flat list and grouped by module."
+          }
+        },
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"invoices.export\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["permissions"]
+            },
+            "description": "Registers a new Spatie permission ability formatted as module.action."
+          }
+        },
+        {
+          "name": "Bulk Generate CRUD Permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module\": \"products\",\n  \"actions\": [\"view\", \"create\", \"edit\", \"delete\", \"export\"],\n  \"guard_name\": \"web\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions/bulk-generate",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", "bulk-generate"]
+            },
+            "description": "Bulk generates a full CRUD permission package for a specified module (e.g. products.view, products.create, products.edit, products.delete)."
+          }
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"invoices.download\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions/18",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", "18"]
+            },
+            "description": "Updates permission slug identifier."
+          }
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions/18",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", "18"]
+            },
+            "description": "Deletes a permission from the catalog."
+          }
+        }
+      ]
+    }
+  ]
+}
